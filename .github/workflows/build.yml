@@ -54,7 +54,10 @@ jobs:
   # BUILD PARA LINUX
   # ============================================================
   build-linux:
-    runs-on: ubuntu-latest
+    # Fijamos ubuntu-22.04 (en vez de ubuntu-latest) porque linuxdeployqt
+    # es una herramienta vieja que se cuelga sin avisar en Ubuntu 24.04
+    # (glibc más nueva de lo que soporta).
+    runs-on: ubuntu-22.04
     steps:
       - name: Descargar código del repositorio
         uses: actions/checkout@v4

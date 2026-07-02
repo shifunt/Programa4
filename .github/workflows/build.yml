@@ -1,7 +1,5 @@
 name: Build SeguridadGolden
 
-# Se ejecuta automáticamente cada vez que subís código a la rama "main"
-# o cuando lo lanzás manualmente desde la pestaña "Actions" en GitHub.
 on:
   push:
     branches: [ main, master ]
@@ -10,7 +8,7 @@ on:
 jobs:
 
   # ============================================================
-  # BUILD PARA WINDOWS
+  # BUILD PARA WINDOWS (usando MSVC en vez de MinGW)
   # ============================================================
   build-windows:
     runs-on: windows-latest
@@ -18,16 +16,17 @@ jobs:
       - name: Descargar código del repositorio
         uses: actions/checkout@v4
 
-      - name: Instalar Qt
+      - name: Preparar entorno de MSVC (cl.exe, nmake)
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Instalar Qt (versión MSVC)
         uses: jurplel/install-qt-action@v3
         with:
           version: '6.7.0'
           host: 'windows'
           target: 'desktop'
-          arch: 'win64_mingw'
+          arch: 'win64_msvc2019_64'
           modules: 'qtimageformats'
-          # Forzar el mirror oficial de Qt: el mirror automático que elige
-          # GitHub a veces entrega archivos .7z corruptos (Bad7zFile).
           mirror: 'https://download.qt.io'
           cache: false
 
@@ -37,7 +36,7 @@ jobs:
           mkdir build-windows
           cd build-windows
           qmake ..\SeguridadGolden.pro CONFIG+=release
-          mingw32-make -j4
+          nmake
 
       - name: Empaquetar con windeployqt
         shell: cmd
@@ -100,7 +99,7 @@ jobs:
           Categories=Utility;
           EOF2
           cd ..
-          ./linuxdeployqt-continuous-x86_64.AppImage build-linux/AppDir/SeguridadGolden.desktop -appimage -unsupported-allow-new-glibc
+          ./linuxdeployqt-continuous-x86_64.AppImage build-linux/AppDir/SeguridadGolden.desktop -appimage -unsupported-allow-new-glibc -verbose=2
 
       - name: Subir resultado como artifact descargable
         uses: actions/upload-artifact@v4

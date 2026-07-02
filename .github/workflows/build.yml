@@ -73,7 +73,7 @@ jobs:
           cache: false
 
       - name: Instalar dependencias del sistema
-        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev fuse libfuse2 imagemagick patchelf
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev fuse libfuse2 imagemagick patchelf libxcb-cursor0
 
       - name: Compilar
         run: |

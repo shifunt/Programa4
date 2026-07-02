@@ -1,0 +1,103 @@
+name: Build SeguridadGolden
+
+# Se ejecuta automáticamente cada vez que subís código a la rama "main"
+# o cuando lo lanzás manualmente desde la pestaña "Actions" en GitHub.
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+
+  # ============================================================
+  # BUILD PARA WINDOWS
+  # ============================================================
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Descargar código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.7.0'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_mingw'
+          modules: 'qtimageformats'
+
+      - name: Compilar
+        shell: cmd
+        run: |
+          mkdir build-windows
+          cd build-windows
+          qmake ..\SeguridadGolden.pro CONFIG+=release
+          mingw32-make -j4
+
+      - name: Empaquetar con windeployqt
+        shell: cmd
+        run: |
+          cd build-windows\release
+          windeployqt SeguridadGolden.exe --release --no-translations
+
+      - name: Subir resultado como artifact descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: SeguridadGolden-Windows
+          path: build-windows/release/
+
+  # ============================================================
+  # BUILD PARA LINUX
+  # ============================================================
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.7.0'
+          host: 'linux'
+          target: 'desktop'
+          modules: 'qtimageformats'
+
+      - name: Instalar dependencias del sistema
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev fuse libfuse2
+
+      - name: Compilar
+        run: |
+          mkdir build-linux
+          cd build-linux
+          qmake ../SeguridadGolden.pro CONFIG+=release
+          make -j$(nproc)
+
+      - name: Descargar linuxdeployqt
+        run: |
+          wget -c "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
+          chmod +x linuxdeployqt-continuous-x86_64.AppImage
+
+      - name: Armar AppDir y generar AppImage
+        run: |
+          cd build-linux
+          mkdir -p AppDir/usr/bin
+          cp SeguridadGolden AppDir/usr/bin/
+          cat > AppDir/SeguridadGolden.desktop <<EOF
+          [Desktop Entry]
+          Type=Application
+          Name=SeguridadGolden
+          Exec=SeguridadGolden
+          Icon=icon
+          Categories=Utility;
+          EOF
+          convert -size 256x256 xc:#1b5e20 AppDir/icon.png || echo "sin imagemagick, sigo sin ícono personalizado"
+          cd ..
+          ./linuxdeployqt-continuous-x86_64.AppImage build-linux/AppDir/SeguridadGolden.desktop -appimage -unsupported-allow-new-glibc
+
+      - name: Subir resultado como artifact descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: SeguridadGolden-Linux
+          path: '*.AppImage'

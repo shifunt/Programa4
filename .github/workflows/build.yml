@@ -26,6 +26,10 @@ jobs:
           target: 'desktop'
           arch: 'win64_mingw'
           modules: 'qtimageformats'
+          # Forzar el mirror oficial de Qt: el mirror automático que elige
+          # GitHub a veces entrega archivos .7z corruptos (Bad7zFile).
+          mirror: 'https://download.qt.io'
+          cache: false
 
       - name: Compilar
         shell: cmd
@@ -63,9 +67,11 @@ jobs:
           host: 'linux'
           target: 'desktop'
           modules: 'qtimageformats'
+          mirror: 'https://download.qt.io'
+          cache: false
 
       - name: Instalar dependencias del sistema
-        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev fuse libfuse2
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev fuse libfuse2 imagemagick
 
       - name: Compilar
         run: |
@@ -84,15 +90,15 @@ jobs:
           cd build-linux
           mkdir -p AppDir/usr/bin
           cp SeguridadGolden AppDir/usr/bin/
-          cat > AppDir/SeguridadGolden.desktop <<EOF
+          convert -size 256x256 xc:#1b5e20 AppDir/icon.png
+          cat > AppDir/SeguridadGolden.desktop <<EOF2
           [Desktop Entry]
           Type=Application
           Name=SeguridadGolden
           Exec=SeguridadGolden
           Icon=icon
           Categories=Utility;
-          EOF
-          convert -size 256x256 xc:#1b5e20 AppDir/icon.png || echo "sin imagemagick, sigo sin ícono personalizado"
+          EOF2
           cd ..
           ./linuxdeployqt-continuous-x86_64.AppImage build-linux/AppDir/SeguridadGolden.desktop -appimage -unsupported-allow-new-glibc
 

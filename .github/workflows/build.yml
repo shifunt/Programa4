@@ -73,7 +73,7 @@ jobs:
           cache: false
 
       - name: Instalar dependencias del sistema
-        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev fuse libfuse2 imagemagick
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev fuse libfuse2 imagemagick patchelf
 
       - name: Compilar
         run: |
@@ -82,12 +82,15 @@ jobs:
           qmake ../SeguridadGolden.pro CONFIG+=release
           make -j$(nproc)
 
-      - name: Descargar linuxdeployqt
+      - name: Descargar linuxdeploy y su plugin de Qt
         run: |
-          wget -c "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
-          chmod +x linuxdeployqt-continuous-x86_64.AppImage
+          wget -c "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+          wget -c "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage"
+          chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
 
       - name: Armar AppDir y generar AppImage
+        env:
+          QMAKE: ${{ env.Qt6_DIR }}/bin/qmake
         run: |
           cd build-linux
           mkdir -p AppDir/usr/bin
@@ -102,7 +105,12 @@ jobs:
           Categories=Utility;
           EOF2
           cd ..
-          ./linuxdeployqt-continuous-x86_64.AppImage build-linux/AppDir/SeguridadGolden.desktop -appimage -unsupported-allow-new-glibc -verbose=2
+          ./linuxdeploy-x86_64.AppImage --appdir build-linux/AppDir \
+            --executable build-linux/AppDir/usr/bin/SeguridadGolden \
+            --desktop-file build-linux/AppDir/SeguridadGolden.desktop \
+            --icon-file build-linux/AppDir/icon.png \
+            --plugin qt \
+            --output appimage
 
       - name: Subir resultado como artifact descargable
         uses: actions/upload-artifact@v4
